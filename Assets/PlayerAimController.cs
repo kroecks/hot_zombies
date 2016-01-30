@@ -133,4 +133,14 @@ public class PlayerAimController : MonoBehaviour {
 
         return AimDirection.eAimDirectionN;
     }
+
+    public Vector3 GetAimOrigin()
+    {
+        return transform.position + GetAimVector();
+    }
+
+    public Vector3 GetAimVector()
+    {
+        return CurrentAim;
+    }
 }

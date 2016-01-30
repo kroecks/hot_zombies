@@ -70,6 +70,11 @@ public class PlayerMoveController : MonoBehaviour {
             }
         }
 
+        if( motion.z != 0f)
+        {
+            Debug.LogError("Why is there a z");
+        }
+
         GetComponent<CharacterController>().Move(motion);
 	
 	}

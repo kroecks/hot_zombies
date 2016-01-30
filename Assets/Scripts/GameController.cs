@@ -8,6 +8,23 @@ public class GameController : MonoBehaviour
 {
     public static Dictionary<int, PlayerObject> sActivePlayers = new Dictionary<int, PlayerObject>();
 
+    public static PlayerObject GetClosestPlayer( Vector3 fromPoint, ref float outDistance )
+    {
+        PlayerObject retVal = null;
+        outDistance = 0f;
+        foreach ( KeyValuePair<int,PlayerObject> player in sActivePlayers )
+        {
+            float curDistance = Vector3.Distance(player.Value.transform.position, fromPoint);
+            if ( !retVal || curDistance < outDistance)
+            {
+                retVal = player.Value;
+                outDistance = curDistance;
+            }
+        }
+
+        return retVal;
+    }
+
     public void Update()
     {
         if( Input.GetButtonDown("StartGame"))
@@ -25,7 +42,6 @@ public class GameController : MonoBehaviour
             return;
         }
         AddPlayerOne();
-        AddPlayerTwo();
     }
 
 
@@ -57,8 +73,6 @@ public class GameController : MonoBehaviour
         playerObj.OnStart();
 
         sActivePlayers.Add(2, playerObj);
-
-        Debug.Log("There are now " + sActivePlayers.Count.ToString() + " players");
     }
 
     public void AddPlayerOne()
@@ -84,7 +98,5 @@ public class GameController : MonoBehaviour
         playerObj.OnStart();
 
         sActivePlayers.Add(1, playerObj);
-
-        Debug.Log("There are now " + sActivePlayers.Count.ToString() + " players");
     }
 }

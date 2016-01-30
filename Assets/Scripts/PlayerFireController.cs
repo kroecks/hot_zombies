@@ -17,8 +17,22 @@ public class PlayerFireController : MonoBehaviour {
 
     public Projectile[] m_projectiles = new Projectile[0];
 
+    public LineRenderer m_beamRenderer = new LineRenderer();
+    public Material m_beamMaterial = null;
+
     // Use this for initialization
-    void Start () {
+    void Awake () {
+
+        if( !m_beamRenderer)
+        {
+            gameObject.AddComponent<LineRenderer>();
+            m_beamRenderer = GetComponent<LineRenderer>();
+        }
+
+        if( m_beamMaterial != null)
+        {
+            m_beamRenderer.material = m_beamMaterial;
+        }
 	
 	}
 	
@@ -60,9 +74,14 @@ public class PlayerFireController : MonoBehaviour {
 
         if (m_primaryHeld)
         {
+            m_beamRenderer.enabled = true;
             OnPrimaryHeld();
             // Can't hold secondary while primary
             m_secondaryHeld = false;
+        }
+        else
+        {
+            m_beamRenderer.enabled = false;
         }
 
         // If we're letting go of secondary, eject our passenger
@@ -136,7 +155,7 @@ public class PlayerFireController : MonoBehaviour {
     {
         float timeInThrow = 0f;
         Vector3 startingPosition = throwObj.position;
-        while( timeInThrow < throwTime )
+        while( timeInThrow < throwTime && throwObj != null )
         {
             float percThrow = Mathf.Clamp01(timeInThrow / throwTime);
             Vector3 newPositon = Vector3.Lerp(throwObj.position, throwTo, percThrow);
@@ -166,9 +185,40 @@ public class PlayerFireController : MonoBehaviour {
         m_suckHoldObject = null;
     }
 
+    public float m_maxFireDistance = 100f;
+    public float m_fireRadiusLeniency = 10f;
+
     void OnPrimaryHeld()
     {
-        if(m_fireCooldown > 0f)
+        m_beamRenderer.enabled = true;
+        Vector3 aimDir = Vector3.right;
+        Vector3 aimOrigin = transform.position;
+        PlayerAimController aimCont = GetComponent<PlayerAimController>();
+        if( aimCont )
+        {
+            aimDir = aimCont.GetAimVector();
+            aimOrigin = aimCont.GetAimOrigin();
+        }
+
+        Vector3 lastPos = aimOrigin + ( aimDir * m_maxFireDistance );
+
+        Ray testRay = new Ray(aimOrigin, aimDir);
+        RaycastHit rayHit = new RaycastHit();
+
+        if( Physics.SphereCast(testRay, m_fireRadiusLeniency, out rayHit, m_maxFireDistance ))
+        {
+            lastPos = rayHit.point;
+        }
+
+        if( m_beamRenderer )
+        {
+            m_beamRenderer.SetVertexCount(2);
+            m_beamRenderer.SetPosition(0, aimOrigin);
+            m_beamRenderer.SetPosition(1, lastPos);
+        }
+
+
+        if (m_fireCooldown > 0f)
         {
             return;
         }
