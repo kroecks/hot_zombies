@@ -49,11 +49,11 @@ public class PlayerFireController : MonoBehaviour {
         m_secondaryHeld = false;
         m_primaryHeld = false;
 
-        if ( Input.GetButton( m_fireButtonStr ) )
+        if ( Input.GetButton( m_fireButtonStr ) || Input.GetAxisRaw( m_fireButtonStr ) != 0f )
         {
             m_primaryHeld = true;
         }
-        else if ( Input.GetButton(m_secondaryFireButtonStr))
+        else if ( Input.GetButton(m_secondaryFireButtonStr) || Input.GetAxisRaw(m_secondaryFireButtonStr) != 0f)
         {
             m_secondaryHeld = true;
         }
