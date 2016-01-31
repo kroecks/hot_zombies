@@ -4,12 +4,18 @@ using System.Collections.Generic;
 
 public class PlayerObject : MonoBehaviour
 {
-    public int playerNum = 0;
+    public int mObjectId = 0;
 
     public bool m_MovementEnabled = true;
 
     PlayerMoveController moveController = null;
     PlayerFireController fireController = null;
+
+    public void Awake()
+    {
+        mObjectId = GameController.GetNextObjectId();
+        GameController.sActivePlayers.Add(mObjectId, this);
+    }
 
     public void OnStart()
     {

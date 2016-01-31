@@ -52,6 +52,12 @@ public class MainCameraController : MonoBehaviour {
             cameraBounds.GrowTo(player.transform.position);
         }
 
+        foreach( KeyValuePair<int, PlayerTeamObjectiveObject> objPair in GameController.sActiveObjects )
+        {
+            PlayerTeamObjectiveObject player = objPair.Value;
+            cameraBounds.GrowTo(player.transform.position);
+        }
+
         Vector3 centerPoint = cameraBounds.GetCenter();
         float camHeight = 0f;
 

@@ -246,6 +246,10 @@ public class PlayerFireController : MonoBehaviour {
         if( m_beamRenderer )
         {
             m_beamRenderer.SetVertexCount(2);
+
+            aimOrigin.z -= 1f;
+            lastPos.z -= 1f;
+
             m_beamRenderer.SetPosition(0, aimOrigin);
             m_beamRenderer.SetPosition(1, lastPos);
         }

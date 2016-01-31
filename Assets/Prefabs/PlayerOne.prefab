@@ -592,7 +592,7 @@ MonoBehaviour:
   momentumSpeedUpRate: 1
   momentumSlowDownRate: 10
   currentSpeed: 0
-  maxSpeed: .25
+  maxSpeed: .100000001
   moveHorizontalStr: Horizontal1
   moveVerticalStr: Vertical1
   moveHorizontal: 0
@@ -641,7 +641,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19db51e5630f2de48abb0daf52a01a28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerNum: 0
+  mObjectId: 0
   m_MovementEnabled: 1
 --- !u!120 &12053870
 LineRenderer:

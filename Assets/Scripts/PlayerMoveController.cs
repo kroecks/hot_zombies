@@ -46,7 +46,11 @@ public class PlayerMoveController : MonoBehaviour {
         moveVector.x = moveHorizontal;
         moveVector.y = moveVertical;
 
+        moveVector = Vector3.Normalize(moveVector);
+
         moveVector *= currentSpeed;
+
+        Debug.Log("Current speed: " + moveVector.ToString());
 
         if( MainCameraController.sInstance != null )
         {

@@ -6,7 +6,81 @@ using System.Text;
 
 public class GameController : MonoBehaviour
 {
+    public static int sLastObjectId = 0;
+    public static int GetNextObjectId()
+    {
+        return ++sLastObjectId;
+    }
+
     public static Dictionary<int, PlayerObject> sActivePlayers = new Dictionary<int, PlayerObject>();
+    public static Dictionary<int, PlayerTeamObjectiveObject> sActiveObjects = new Dictionary<int, PlayerTeamObjectiveObject>();
+    public static Dictionary<int, BaseMonsterBrain> sSpawnedMonsters = new Dictionary<int, BaseMonsterBrain>();
+
+    public static BaseMonsterBrain GetClosestKOMonster( Vector3 fromPoint, ref float outDistance )
+    {
+        BaseMonsterBrain retVal = null;
+        outDistance = 0f;
+        foreach (KeyValuePair<int, BaseMonsterBrain> monster in sSpawnedMonsters)
+        {
+            if(!monster.Value.IsKnockedOut())
+            {
+                continue;
+            }
+            float curDistance = Vector3.Distance(monster.Value.transform.position, fromPoint);
+            if (!retVal || curDistance < outDistance)
+            {
+                retVal = monster.Value;
+                outDistance = curDistance;
+            }
+        }
+
+        return retVal;
+    }
+
+    public static GameObject GetClosestAttackableObject( Vector3 fromPath, ref float outDistance )
+    {
+        float playerDistance = 0f;
+        PlayerObject playObj = GetClosestPlayer(fromPath, ref playerDistance);
+
+        float objectiveDistance = 0f;
+        PlayerTeamObjectiveObject objvObj = GetClosestGameObjective(fromPath, ref objectiveDistance);
+
+        if(playObj && !objvObj)
+        {
+            return playObj.gameObject;
+        }
+        else if( objvObj && !playObj)
+        {
+            return objvObj.gameObject;
+        }
+        else if( playerDistance < objectiveDistance )
+        {
+            return playObj.gameObject;
+        }
+        else
+        {
+            return objvObj.gameObject;
+        }
+    }
+
+    public static PlayerTeamObjectiveObject GetClosestGameObjective( Vector3 fromPoint, ref float outDistance )
+    {
+        PlayerTeamObjectiveObject retVal = null;
+        outDistance = 0f;
+        foreach (KeyValuePair<int, PlayerTeamObjectiveObject> objective in sActiveObjects)
+        {
+            float curDistance = Vector3.Distance(objective.Value.transform.position, fromPoint);
+            if (!retVal || curDistance < outDistance)
+            {
+                retVal = objective.Value;
+                outDistance = curDistance;
+            }
+        }
+
+        return retVal;
+        
+    }
+
 
     public static PlayerObject GetClosestPlayer( Vector3 fromPoint, ref float outDistance )
     {
@@ -44,6 +118,7 @@ public class GameController : MonoBehaviour
         AddPlayerOne();
     }
 
+    public ProgressRenderer m_playerOneBar = null;
 
     public GameObject player1Prefab = null;
     public GameObject player2Prefab = null;
@@ -98,5 +173,10 @@ public class GameController : MonoBehaviour
         playerObj.OnStart();
 
         sActivePlayers.Add(1, playerObj);
+
+        if( m_playerOneBar )
+        {
+            m_playerOneBar.m_TrackedResource = playerObj.GetComponent<PlayerChargeTracker>();
+        }
     }
 }
