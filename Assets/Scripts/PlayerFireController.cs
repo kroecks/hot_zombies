@@ -2,49 +2,11 @@
 using System.Collections;
 using System;
 
-[Serializable]
-public class Projectile
-{
-    public GameObject m_prefab = null;
-    public float m_projectileSpeed = 10f;
-
-    public Texture m_uiTexture = null;
-}
-
 public class PlayerFireController : MonoBehaviour {
 
-    public Projectile m_primaryFire = new Projectile();
-
-    public Projectile[] m_projectiles = new Projectile[0];
-
     public LineRenderer m_beamRenderer = new LineRenderer();
-    public Material m_beamMaterial = null;
 
-    // Use this for initialization
-    void Awake () {
-
-        if( !m_beamRenderer)
-        {
-            gameObject.AddComponent<LineRenderer>();
-            m_beamRenderer = GetComponent<LineRenderer>();
-        }
-
-        if( m_beamMaterial != null)
-        {
-            m_beamRenderer.material = m_beamMaterial;
-        }
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
-
-    public void UpdateFireController()
-    {
-        ProcessInput();
-    }
+    public AudioClip m_fireSoundLoop = null;
 
     public string m_fireButtonStr;
     public string m_secondaryFireButtonStr;
@@ -54,10 +16,38 @@ public class PlayerFireController : MonoBehaviour {
 
     bool m_secondaryStatusAchieved = false;
 
+    public float m_secondarySuckUpRange = 5f;
+
+    public float m_EnergyUsePerSec = 3f;
+
+    public Transform m_suckHoldObject = null;
+    public Transform m_suckHoldPosition = null;
+
+    public float m_throwTime = 0.3f;
+    public float m_throwDistance = 10f;
+
+    public float m_laserDamagePerSec = 1f;
+    public float m_maxFireDistance = 100f;
+    public float m_fireRadiusLeniency = 10f;
+
+    // Use this for initialization
+    void Awake () {
+
+        if( !m_beamRenderer)
+        {
+            gameObject.AddComponent<LineRenderer>();
+            m_beamRenderer = GetComponent<LineRenderer>();
+        }
+	
+	}
+	
+    public void UpdateFireController()
+    {
+        ProcessInput();
+    }
+
     void ProcessInput()
     {
-        m_fireCooldown -= Time.deltaTime;
-
         bool secondInitialHeld = m_secondaryHeld;
         bool firstInitialHeld = m_primaryHeld;
         m_secondaryHeld = false;
@@ -70,6 +60,24 @@ public class PlayerFireController : MonoBehaviour {
         else if ( Input.GetButton(m_secondaryFireButtonStr) || Input.GetAxisRaw(m_secondaryFireButtonStr) != 0f)
         {
             m_secondaryHeld = true;
+        }
+
+        if( m_primaryHeld != firstInitialHeld)
+        {
+            AudioSource snSrc = GetComponent<AudioSource>();
+            if( snSrc )
+            {
+                if(m_primaryHeld)
+                {
+                    snSrc.loop = true;
+                    snSrc.clip = m_fireSoundLoop;
+                    snSrc.Play();
+                }
+                else
+                {
+                    snSrc.Stop();
+                }
+            }
         }
 
         if (m_primaryHeld)
@@ -94,22 +102,11 @@ public class PlayerFireController : MonoBehaviour {
         {
             OnSecondaryHeld();
         }
-
-        
-
-
     }
-
-    public float m_fireRate = 1f;
-    public float m_fireCooldown = 0f;
-
-    public float m_secondarySuckUpRange = 5f;
-
-    public Transform m_suckHoldObject = null;
-    public Transform m_suckHoldPosition = null;
 
     void OnSecondaryHeld()
     {
+        PlayerAimController aimCon = GetComponent<PlayerAimController>();
         if( !m_suckHoldObject)
         {
             Collider[] foundObjects = Physics.OverlapSphere(transform.position, m_secondarySuckUpRange);
@@ -128,7 +125,7 @@ public class PlayerFireController : MonoBehaviour {
                 }
 
                 SuctionGrabbable suckComp = suckedObj.GetComponent<SuctionGrabbable>();
-                if( !suckComp)
+                if( !suckComp || !suckComp.CanGrab())
                 {
                     continue;
                 }
@@ -137,9 +134,9 @@ public class PlayerFireController : MonoBehaviour {
                 m_suckHoldObject = suckComp.transform;
             }
         }
-        else if(m_suckHoldObject && m_suckHoldPosition)
+        else if(m_suckHoldObject && aimCon)
         {
-            m_suckHoldObject.position = m_suckHoldPosition.position;
+            m_suckHoldObject.position = aimCon.GetAimOrigin();
         }
     }
 
@@ -153,22 +150,34 @@ public class PlayerFireController : MonoBehaviour {
 
     IEnumerator ThrowingObject( Transform throwObj, Vector3 throwTo, float throwTime )
     {
+        Vector3 throwDir = throwTo - throwObj.position;
+
+        throwDir = Vector3.Normalize(throwDir);
+        SuctionGrabbable suck = throwObj.GetComponent<SuctionGrabbable>();
+        if( suck)
+        {
+            suck.ThrowObject();
+        }
+
         float timeInThrow = 0f;
         Vector3 startingPosition = throwObj.position;
-        while( timeInThrow < throwTime && throwObj != null )
+        while( timeInThrow <= throwTime && throwObj != null )
         {
             float percThrow = Mathf.Clamp01(timeInThrow / throwTime);
-            Vector3 newPositon = Vector3.Lerp(throwObj.position, throwTo, percThrow);
-            timeInThrow += Time.deltaTime;
 
+            Vector3 newPositon = Vector3.Lerp(startingPosition, throwTo, percThrow);
             throwObj.position = newPositon;
+
+            timeInThrow += Time.fixedDeltaTime;
 
             yield return new WaitForFixedUpdate();
         }
-    }
 
-    public float m_throwTime = 0.3f;
-    public float m_throwDistance = 10f;
+        if( suck )
+        {
+            suck.OnThrowComplete(throwDir);
+        }
+    }
 
     void OnSeconaryReleased()
     {
@@ -178,15 +187,24 @@ public class PlayerFireController : MonoBehaviour {
             suckComp.SetGrabbed(false);
         }
 
-        Vector3 throwTo = (m_suckHoldPosition.position - transform.position) * m_throwDistance;
+        PlayerAimController aimCon = GetComponent<PlayerAimController>();
+        if( aimCon == null )
+        {
+            m_suckHoldObject = null;
+            return;
+        }
+
+        Vector3 throwDir = aimCon.GetAimVector();
+
+
+        Vector3 aimOrigin = aimCon.GetAimOrigin();
+        Vector3 throwTo = aimOrigin + (throwDir * m_throwDistance);
 
         StartCoroutine(ThrowingObject(m_suckHoldObject, throwTo, m_throwTime));
         
         m_suckHoldObject = null;
     }
-
-    public float m_maxFireDistance = 100f;
-    public float m_fireRadiusLeniency = 10f;
+    
 
     void OnPrimaryHeld()
     {
@@ -200,14 +218,29 @@ public class PlayerFireController : MonoBehaviour {
             aimOrigin = aimCont.GetAimOrigin();
         }
 
-        Vector3 lastPos = aimOrigin + ( aimDir * m_maxFireDistance );
+        PlayerChargeTracker chargeComp = GetComponent<PlayerChargeTracker>();
+        if( chargeComp )
+        {
+            chargeComp.UseCharge(m_EnergyUsePerSec * Time.deltaTime);
+        }
 
         Ray testRay = new Ray(aimOrigin, aimDir);
         RaycastHit rayHit = new RaycastHit();
+        BaseMonsterBrain hitMonster = null;
 
-        if( Physics.SphereCast(testRay, m_fireRadiusLeniency, out rayHit, m_maxFireDistance ))
+        float distanceForLaser = m_maxFireDistance;
+
+        if ( Physics.SphereCast(testRay, m_fireRadiusLeniency, out rayHit, m_maxFireDistance ))
         {
-            lastPos = rayHit.point;
+            hitMonster = rayHit.collider.GetComponent<BaseMonsterBrain>();
+            distanceForLaser = Vector3.Distance(aimOrigin, rayHit.point);
+        }
+
+        Vector3 lastPos = aimOrigin + (aimDir * distanceForLaser);
+
+        if (hitMonster)
+        {
+            hitMonster.DoDamage(m_laserDamagePerSec * Time.deltaTime, aimDir);
         }
 
         if( m_beamRenderer )
@@ -216,18 +249,6 @@ public class PlayerFireController : MonoBehaviour {
             m_beamRenderer.SetPosition(0, aimOrigin);
             m_beamRenderer.SetPosition(1, lastPos);
         }
-
-
-        if (m_fireCooldown > 0f)
-        {
-            return;
-        }
-
-        FirePrimary();
     }
 
-    void FirePrimary()
-    {
-        m_fireCooldown = m_fireRate;
-    }
 }

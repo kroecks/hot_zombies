@@ -1,20 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+public enum AimDirection
+{
+    eAimDirectionN,
+    eAimDirectionNE,
+    eAimDirectionE,
+    eAimDirectionSE,
+    eAimDirectionS,
+    eAimDirectionSW,
+    eAimDirectionW,
+    eAimDirectionNW,
+    eAimDirectionCount,
+}
+
 public class PlayerAimController : MonoBehaviour {
 
-    public enum AimDirection
-    {
-        eAimDirectionN,
-        eAimDirectionNE,
-        eAimDirectionE,
-        eAimDirectionSE,
-        eAimDirectionS,
-        eAimDirectionSW,
-        eAimDirectionW,
-        eAimDirectionNW,
-        eAimDirectionCount,
-    }
+    
 
 	// Use this for initialization
 	void Start () {
@@ -125,13 +127,16 @@ public class PlayerAimController : MonoBehaviour {
         for (int i = 0; i < (int)AimDirection.eAimDirectionCount; i++ )
         {
             float directionAngle = GetAngleForDirection((AimDirection)i);
-            if( angle > (directionAngle - spaceForEachHalf) && angle < (directionAngle + spaceForEachHalf))
+            float checkDirMin = directionAngle - spaceForEachHalf;
+            float checkDirMax = directionAngle + spaceForEachHalf;
+
+            if ( angle >= checkDirMin && angle <= checkDirMax)
             {
                 return (AimDirection)(i);
             }
         }
 
-        return AimDirection.eAimDirectionN;
+        return AimDirection.eAimDirectionS;
     }
 
     public Vector3 GetAimOrigin()

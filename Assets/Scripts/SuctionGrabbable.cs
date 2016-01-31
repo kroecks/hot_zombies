@@ -15,6 +15,26 @@ public class SuctionGrabbable : MonoBehaviour {
 	
 	}
 
+    public bool CanGrab()
+    {
+        BaseMonsterBrain monster = GetComponent<BaseMonsterBrain>();
+        if( monster && !monster.IsKnockedOut())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public void ThrowObject()
+    {
+        BoxCollider boxCol = GetComponent<BoxCollider>();
+        if (boxCol)
+        {
+            boxCol.enabled = true;
+        }
+    }
+
     public void SetGrabbed( bool grabbed )
     {
         m_grabbed = grabbed;
@@ -33,6 +53,21 @@ public class SuctionGrabbable : MonoBehaviour {
             {
                 player.SetMovementEnabled(true);
             }
+        }
+
+        BoxCollider boxCol = GetComponent<BoxCollider>();
+        if( boxCol )
+        {
+            boxCol.enabled = false;
+        }
+    }
+
+    public void OnThrowComplete( Vector3 throwDir )
+    {
+        BaseMonsterBrain monster = GetComponent<BaseMonsterBrain>();
+        if( monster )
+        {
+            monster.DoDamage(50f, throwDir);
         }
     }
 }
