@@ -17,8 +17,8 @@ TagManager:
   - Monster
   - Object
   - Grabbable
-  - 
-  - 
+  - HubAssaultPoint
+  - RechargeNode
   - 
   - 
   - 

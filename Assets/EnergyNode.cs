@@ -8,6 +8,7 @@ public class EnergyNode : MonoBehaviour {
     public bool m_IsCharged = false;
 
     public GameObject m_PowerDownParticle = null;
+    public GameObject m_PowerUpParticle = null;
 
     public Animator m_Animator = null;
 
@@ -37,6 +38,17 @@ public class EnergyNode : MonoBehaviour {
         {
             m_Animator.SetBool("FullCharge", true);
         }
+
+        WireSetToggle wireComp = GetComponent<WireSetToggle>();
+        if (wireComp)
+        {
+            wireComp.SetWiresActive(true);
+        }
+
+        if (m_PowerUpParticle)
+        {
+            Instantiate(m_PowerUpParticle, transform.position, transform.rotation);
+        }
     }
 
     void AbsorbCharge()
@@ -50,6 +62,12 @@ public class EnergyNode : MonoBehaviour {
         if( m_PowerDownParticle)
         {
             Instantiate(m_PowerDownParticle, transform.position, transform.rotation);
+        }
+
+        WireSetToggle wireComp = GetComponent<WireSetToggle>();
+        if( wireComp )
+        {
+            wireComp.SetWiresActive(false);
         }
     }
 

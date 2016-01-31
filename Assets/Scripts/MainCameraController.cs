@@ -13,6 +13,9 @@ public class MainCameraController : MonoBehaviour {
     public float cameraHeightDampening = 1f;
     public float cameraMoveDampening = 1f;
 
+    public float m_desiredCamHeight = 8f;
+    public float m_currentCamHeight = 8f;
+
 	// Use this for initialization
 	void Start () {
         cameraBounds = new BoundsBox(transform.position);
@@ -30,6 +33,13 @@ public class MainCameraController : MonoBehaviour {
     void MoveCamera()
     {
         transform.position = Vector3.Lerp(transform.position, m_desiredCamPoint, Time.deltaTime * cameraMoveDampening);
+
+        Camera camComp = GetComponent<Camera>();
+        if (camComp)
+        {
+            m_currentCamHeight = Mathf.Lerp(m_currentCamHeight, m_desiredCamHeight, Time.deltaTime * cameraHeightDampening);
+            camComp.orthographicSize = Mathf.Clamp(m_currentCamHeight, lowestCamDistance, highestCamDistance);
+        }
     }
 
     public Vector3 m_desiredCamPoint = Vector3.zero;
@@ -45,22 +55,32 @@ public class MainCameraController : MonoBehaviour {
         Vector3 startingPoint = transform.position;
         startingPoint.z = 0f;
         cameraBounds = new BoundsBox(startingPoint);
+
+        BoundsBox priorityBounds = new BoundsBox(startingPoint);
+
         foreach ( KeyValuePair<int,PlayerObject> playerPair in GameController.sActivePlayers)
         {
             PlayerObject player = playerPair.Value;
-            int playerNum = playerPair.Key;
             cameraBounds.GrowTo(player.transform.position);
+            priorityBounds.GrowTo(player.transform.position);
         }
 
         foreach( KeyValuePair<int, PlayerTeamObjectiveObject> objPair in GameController.sActiveObjects )
         {
             PlayerTeamObjectiveObject player = objPair.Value;
             cameraBounds.GrowTo(player.transform.position);
+            priorityBounds.GrowTo(player.transform.position);
         }
 
-        Vector3 centerPoint = cameraBounds.GetCenter();
-        float camHeight = 0f;
+        foreach (KeyValuePair<int, BaseMonsterBrain> monstPair in GameController.sSpawnedMonsters)
+        {
+            BaseMonsterBrain monster = monstPair.Value;
+            cameraBounds.GrowTo(monster.transform.position);
+        }
 
+        cameraBounds.GrowBy(m_cameraBoundsRadius);
+
+        Vector3 centerPoint = priorityBounds.GetCenter();
 
         float heightRatio = 0f;
         float maxDistance = cameraBounds.MaxDistance();
@@ -71,12 +91,11 @@ public class MainCameraController : MonoBehaviour {
             heightRatio = (distanceFromMin / maxDelta);
         }
 
-        camHeight = Mathf.Lerp(lowestCamDistance, highestCamDistance, heightRatio);
-        centerPoint.z = Mathf.Clamp(camHeight, lowestCamDistance, highestCamDistance);
-        centerPoint.z *= -1f;
+        m_desiredCamHeight = Mathf.Lerp(lowestCamDistance, highestCamDistance, heightRatio);
 
         m_desiredCamPoint = centerPoint;
-        
+        m_desiredCamPoint.z = -10f;
+
     }
 
     static Vector3 GetCameraPosition()

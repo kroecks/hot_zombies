@@ -6,6 +6,7 @@ using System.Text;
 
 public class GameController : MonoBehaviour
 {
+    public static GameController sInstance = null;
     public static int sLastObjectId = 0;
     public static int GetNextObjectId()
     {
@@ -15,6 +16,24 @@ public class GameController : MonoBehaviour
     public static Dictionary<int, PlayerObject> sActivePlayers = new Dictionary<int, PlayerObject>();
     public static Dictionary<int, PlayerTeamObjectiveObject> sActiveObjects = new Dictionary<int, PlayerTeamObjectiveObject>();
     public static Dictionary<int, BaseMonsterBrain> sSpawnedMonsters = new Dictionary<int, BaseMonsterBrain>();
+    public static Dictionary<int, ReviveSpawns> sReviveSpawns = new Dictionary<int, ReviveSpawns>();
+
+    public static ReviveSpawns GetClosestReviveSpawn(Vector3 fromPoint, ref float outDistance)
+    {
+        ReviveSpawns retVal = null;
+        outDistance = 0f;
+        foreach (KeyValuePair<int, ReviveSpawns> monster in sReviveSpawns)
+        {
+            float curDistance = Vector3.Distance(monster.Value.transform.position, fromPoint);
+            if (!retVal || curDistance < outDistance)
+            {
+                retVal = monster.Value;
+                outDistance = curDistance;
+            }
+        }
+
+        return retVal;
+    }
 
     public static BaseMonsterBrain GetClosestKOMonster( Vector3 fromPoint, ref float outDistance )
     {
@@ -47,18 +66,22 @@ public class GameController : MonoBehaviour
 
         if(playObj && !objvObj)
         {
+            outDistance = playerDistance;
             return playObj.gameObject;
         }
         else if( objvObj && !playObj)
         {
+            outDistance = objectiveDistance;
             return objvObj.gameObject;
         }
         else if( playerDistance < objectiveDistance )
         {
+            outDistance = playerDistance;
             return playObj.gameObject;
         }
         else
         {
+            outDistance = objectiveDistance;
             return objvObj.gameObject;
         }
     }
@@ -69,6 +92,10 @@ public class GameController : MonoBehaviour
         outDistance = 0f;
         foreach (KeyValuePair<int, PlayerTeamObjectiveObject> objective in sActiveObjects)
         {
+            if(objective.Value.IsDestroyed() )
+            {
+                continue;
+            }
             float curDistance = Vector3.Distance(objective.Value.transform.position, fromPoint);
             if (!retVal || curDistance < outDistance)
             {
@@ -99,26 +126,112 @@ public class GameController : MonoBehaviour
         return retVal;
     }
 
+    public void Start()
+    {
+        sInstance = this;
+    }
+
+    public void OnPlayerDepleted( int objectId )
+    {
+        if( !sActivePlayers.ContainsKey(objectId))
+        {
+            return;
+        }
+
+        if( sActivePlayers.Count == 1)
+        {
+            GameOver();
+        }
+        else
+        {
+            bool anyAlive = false;
+            foreach( KeyValuePair<int, PlayerObject> pairObj in sActivePlayers )
+            {
+                PlayerObject player = pairObj.Value;
+                if( !player  )
+                {
+                    Debug.LogError("Huge problmen, bro");
+                    continue;
+                }
+
+                PlayerChargeTracker charger = player.GetComponent<PlayerChargeTracker>();
+                if( !charger.IsDepleted())
+                {
+                    anyAlive = true;
+                }
+            }
+
+            if( !anyAlive)
+            {
+                GameOver();
+            }
+        }
+
+    }
+
+    bool playerOneSpawned = false;
+    bool playerTwoSpawned = false;
+
     public void Update()
     {
-        if( Input.GetButtonDown("StartGame"))
+        bool bStartGame = false;
+        if( !playerOneSpawned && HotInputManager.sInstance && HotInputManager.sInstance.GetStart(0))
+        {
+            playerOneSpawned = true;
+            AddPlayerOne();
+            bStartGame = true;
+        }
+
+        if( !playerTwoSpawned && HotInputManager.sInstance && HotInputManager.sInstance.GetStart(1))
+        {
+            playerTwoSpawned = true;
+            AddPlayerTwo();
+            bStartGame = true;
+        }
+
+        if(bStartGame)
         {
             StartGame();
         }
     }
 
-    public bool gameStarted = false;
+    public static bool sGameStarted = false;
+    public static bool sGameEnded = false;
 
     public void StartGame()
     {
-        if( gameStarted )
+        if(sGameStarted)
         {
             return;
         }
-        AddPlayerOne();
+        
+        sGameStarted = true;
+    }
+
+    public void OnObjectiveDestroyed( int objectId )
+    {
+        if( !sActiveObjects.ContainsKey(objectId) )
+        {
+            Debug.LogError("Object destroyed that we don't know about");
+            return;
+        }
+
+        sActiveObjects.Remove(objectId);
+        if( sActiveObjects.Count == 0)
+        {
+            GameOver();
+        }
+    }
+
+    public void GameOver()
+    {
+        sGameEnded = true;
+        sGameStarted = false;
+        // Show some game over UI
     }
 
     public ProgressRenderer m_playerOneBar = null;
+    public ProgressRenderer m_playerTwoBar = null;
 
     public GameObject player1Prefab = null;
     public GameObject player2Prefab = null;
@@ -127,7 +240,9 @@ public class GameController : MonoBehaviour
 
     public void AddPlayerTwo()
     {
-        if( sActivePlayers.ContainsKey(2 ))
+        Debug.Log("Attempting to spawn player two when we have : " +sActivePlayers.Count.ToString());
+
+        if( sActivePlayers.ContainsKey(1))
         {
             return;
         }
@@ -147,12 +262,21 @@ public class GameController : MonoBehaviour
 
         playerObj.OnStart();
 
-        sActivePlayers.Add(2, playerObj);
+        PlayerChargeTracker chargeTrack = playerObj.GetComponent<PlayerChargeTracker>();
+        if (m_playerTwoBar && chargeTrack)
+        {
+            Debug.Log("Go into the water");
+            m_playerTwoBar.m_TrackedResource = chargeTrack;
+            chargeTrack.m_HealthBar = m_playerTwoBar;
+        }
+
+        GameController.sActivePlayers.Add(1, playerObj);
     }
 
     public void AddPlayerOne()
     {
-        if (sActivePlayers.ContainsKey(1))
+        Debug.Log("Attempting to spawn player one when we have : " + sActivePlayers.Count.ToString());
+        if (sActivePlayers.ContainsKey(0))
         {
             return;
         }
@@ -172,11 +296,13 @@ public class GameController : MonoBehaviour
 
         playerObj.OnStart();
 
-        sActivePlayers.Add(1, playerObj);
-
-        if( m_playerOneBar )
+        PlayerChargeTracker chargeTrack = playerObj.GetComponent<PlayerChargeTracker>();
+        if ( m_playerOneBar && chargeTrack)
         {
-            m_playerOneBar.m_TrackedResource = playerObj.GetComponent<PlayerChargeTracker>();
+            Debug.Log("Live there die there");
+            m_playerOneBar.m_TrackedResource = chargeTrack;
+            chargeTrack.m_HealthBar = m_playerOneBar;
         }
+        GameController.sActivePlayers.Add(0, playerObj);
     }
 }

@@ -16,10 +16,10 @@ public enum AimDirection
 
 public class PlayerAimController : MonoBehaviour {
 
-    
+    public int mPlayerId = 0;
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
 	
 	}
 	
@@ -38,12 +38,22 @@ public class PlayerAimController : MonoBehaviour {
 
     public Vector3 CurrentAim = Vector3.zero;
 
+
+
     public void UpdateAim()
     {
-        verticalAim = Input.GetAxis(VerticalAimStr);
-        horizontalAim = Input.GetAxis(HorizontalAimStr);
+        if( !HotInputManager.sInstance)
+        {
+            return;
+        }
+        Vector3 inputAimVec = HotInputManager.sInstance.GetLookVector(mPlayerId);
 
-        if(verticalAim == 0f && horizontalAim == 0f)
+        Debug.Log("Player: " + gameObject.name + " is asking for " + mPlayerId.ToString() + " and got: " + inputAimVec.ToString());
+
+        verticalAim = inputAimVec.y;
+        horizontalAim = inputAimVec.x;
+
+        if (verticalAim == 0f && horizontalAim == 0f)
         {
             return;
         }

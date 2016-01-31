@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class PlayerMoveController : MonoBehaviour {
 
+    public int mPlayerId = 0;
+
     public AimDirection m_defaultDirection;
     public AimDirection m_currentDirection;
 
@@ -27,10 +29,17 @@ public class PlayerMoveController : MonoBehaviour {
 
     // Update is called once per frame when our player object tells us to
     public void UpdateMovement () {
+
+        if( !HotInputManager.sInstance )
+        {
+            return;
+        }
+        Vector3 newMov = HotInputManager.sInstance.GetMoveVector(mPlayerId);
+
         moveVector = Vector3.zero;
 
-        moveHorizontal = Input.GetAxis(moveHorizontalStr);
-        moveVertical = Input.GetAxis(moveVerticalStr);
+        moveHorizontal = newMov.x;
+        moveVertical = newMov.y;
 
         bool bMoving = (moveHorizontal != 0f || moveVertical != 0f);
 
@@ -48,36 +57,15 @@ public class PlayerMoveController : MonoBehaviour {
 
         moveVector = Vector3.Normalize(moveVector);
 
-        moveVector *= currentSpeed;
-
-        Debug.Log("Current speed: " + moveVector.ToString());
-
-        if( MainCameraController.sInstance != null )
+        float gameRadius = 50f;
+        if( GameBounds.sBounds )
         {
-            BoundsBox playingBounds = MainCameraController.sInstance.cameraBounds;
-            Vector3 playSpace = playingBounds.GetSize();
+            gameRadius = GameBounds.sBounds.GetGameRadius();
             Vector3 localPosition = transform.position;
-            for ( int axis = 0; axis < 3; axis++ )
+            if( Vector3.Distance(Vector3.zero, localPosition + moveVector ) > gameRadius)
             {
-                if(playSpace[axis] >= MainCameraController.sInstance.m_maxPlayerDistance)
-                {
-                    // Find out if we're trying to expand it further and block the effort
-                    if( localPosition[axis] == playingBounds.GetMin()[axis] )
-                    {
-                        // If we're equal to min, make sure our movement is positive
-                        if(moveVector[axis] < 0f)
-                        {
-                            moveVector[axis] = 0f;
-                        }
-                    }
-                    else // Since the bounds are absolutely our player positions, check if we're moving out
-                    {
-                        if (moveVector[axis] > 0f)
-                        {
-                            moveVector[axis] = 0f;
-                        }
-                    }
-                }
+                // Unless we're heading back in, we don't want to let the player go this way
+                moveVector = Vector3.zero - localPosition;
             }
         }
 
@@ -98,7 +86,7 @@ public class PlayerMoveController : MonoBehaviour {
             }
         }
 
-        GetComponent<CharacterController>().Move(moveVector);
+        transform.position = Vector3.MoveTowards(transform.position, transform.position + moveVector, Time.deltaTime * currentSpeed);
 	
 	}
 

@@ -67,7 +67,7 @@ public class SuctionGrabbable : MonoBehaviour {
         BaseMonsterBrain monster = GetComponent<BaseMonsterBrain>();
         if( monster )
         {
-            monster.DoDamage(50f, throwDir);
+            monster.OnThrownDeath(throwDir);
         }
     }
 }

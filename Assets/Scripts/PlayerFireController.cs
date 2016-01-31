@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using Rewired;
 
 public class PlayerFireController : MonoBehaviour {
 
@@ -8,13 +9,13 @@ public class PlayerFireController : MonoBehaviour {
 
     public AudioClip m_fireSoundLoop = null;
 
+    public int mPlayerId = 0;
+
     public string m_fireButtonStr;
     public string m_secondaryFireButtonStr;
 
     bool m_secondaryHeld = false;
     bool m_primaryHeld = false;
-
-    bool m_secondaryStatusAchieved = false;
 
     public float m_secondarySuckUpRange = 5f;
 
@@ -40,6 +41,31 @@ public class PlayerFireController : MonoBehaviour {
         }
 	
 	}
+
+    public void Disable()
+    {
+        if (m_TractorBeamObj)
+        {
+            m_TractorBeamObj.SetActive(false);
+        }
+
+        if (m_primaryHeld)
+        {
+            m_primaryHeld = false;
+            m_beamRenderer.enabled = false;
+            AudioSource snSrc = GetComponent<AudioSource>();
+            if (snSrc)
+            {
+                snSrc.Stop();
+            }
+        }
+
+        if( m_secondaryHeld)
+        {
+            m_secondaryHeld = false;
+            OnSeconaryReleased();
+        }
+    }
 	
     public void UpdateFireController()
     {
@@ -53,11 +79,21 @@ public class PlayerFireController : MonoBehaviour {
         m_secondaryHeld = false;
         m_primaryHeld = false;
 
-        if ( Input.GetButton( m_fireButtonStr ) || Input.GetAxisRaw( m_fireButtonStr ) != 0f )
+        Player inputPlayer = ReInput.players.GetPlayer(mPlayerId);
+        if( inputPlayer != null )
+        {
+            float value = inputPlayer.GetAxis(m_fireButtonStr);
+            if(value != 0f)
+            {
+                m_primaryHeld = true;
+            }
+        }
+
+        if ( HotInputManager.sInstance && HotInputManager.sInstance.GetPrimaryFire(mPlayerId) )
         {
             m_primaryHeld = true;
         }
-        else if ( Input.GetButton(m_secondaryFireButtonStr) || Input.GetAxisRaw(m_secondaryFireButtonStr) != 0f)
+        else if (HotInputManager.sInstance && HotInputManager.sInstance.GetSecondaryFire(mPlayerId))
         {
             m_secondaryHeld = true;
         }
@@ -104,11 +140,18 @@ public class PlayerFireController : MonoBehaviour {
         }
     }
 
+    public GameObject m_TractorBeamObj = null;
+
     void OnSecondaryHeld()
     {
         PlayerAimController aimCon = GetComponent<PlayerAimController>();
         if( !m_suckHoldObject)
         {
+            if (m_TractorBeamObj)
+            {
+                m_TractorBeamObj.SetActive(false);
+            }
+
             Collider[] foundObjects = Physics.OverlapSphere(transform.position, m_secondarySuckUpRange);
 
             foreach( Collider suckedObj in foundObjects )
@@ -136,6 +179,10 @@ public class PlayerFireController : MonoBehaviour {
         }
         else if(m_suckHoldObject && aimCon)
         {
+            if (m_TractorBeamObj)
+            {
+                m_TractorBeamObj.SetActive(true);
+            }
             m_suckHoldObject.position = aimCon.GetAimOrigin();
         }
     }
@@ -144,6 +191,10 @@ public class PlayerFireController : MonoBehaviour {
     {
         if( !m_secondaryHeld && m_suckHoldObject)
         {
+            if (m_TractorBeamObj)
+            {
+                m_TractorBeamObj.SetActive(false);
+            }
             OnSeconaryReleased();
         }
     }
@@ -204,7 +255,8 @@ public class PlayerFireController : MonoBehaviour {
         
         m_suckHoldObject = null;
     }
-    
+
+    public LayerMask m_FireHitMask = new LayerMask();
 
     void OnPrimaryHeld()
     {
@@ -215,7 +267,6 @@ public class PlayerFireController : MonoBehaviour {
         if( aimCont )
         {
             aimDir = aimCont.GetAimVector();
-            aimOrigin = aimCont.GetAimOrigin();
         }
 
         PlayerChargeTracker chargeComp = GetComponent<PlayerChargeTracker>();
@@ -230,7 +281,7 @@ public class PlayerFireController : MonoBehaviour {
 
         float distanceForLaser = m_maxFireDistance;
 
-        if ( Physics.SphereCast(testRay, m_fireRadiusLeniency, out rayHit, m_maxFireDistance ))
+        if ( Physics.SphereCast(testRay, m_fireRadiusLeniency, out rayHit, m_maxFireDistance, m_FireHitMask))
         {
             hitMonster = rayHit.collider.GetComponent<BaseMonsterBrain>();
             distanceForLaser = Vector3.Distance(aimOrigin, rayHit.point);
@@ -245,12 +296,10 @@ public class PlayerFireController : MonoBehaviour {
 
         if( m_beamRenderer )
         {
+            Vector3 beamOrigin = aimCont.GetAimOrigin();
             m_beamRenderer.SetVertexCount(2);
 
-            aimOrigin.z -= 1f;
-            lastPos.z -= 1f;
-
-            m_beamRenderer.SetPosition(0, aimOrigin);
+            m_beamRenderer.SetPosition(0, beamOrigin);
             m_beamRenderer.SetPosition(1, lastPos);
         }
     }

@@ -6,13 +6,14 @@ public class BaseMonsterBrain : MonoBehaviour {
 
     public int mObjectId = 0;
 
-    public bool m_BrainActive = false;
+    public bool m_BrainActive = true;
 
     public SpriteRenderer m_SpriteComp = null;
 
     public GameObject m_StunPrefab = null;
     public GameObject m_RevivePrefab = null;
-    public GameObject m_deathParticlePrefab = null;
+    public GameObject m_LaserDeathPrefab = null;
+    public GameObject m_ThrownDeathPrefab = null;
 
     public float m_MoveSpeed = 1f;
     public float m_MonsterAttackDistance = 2f;
@@ -26,6 +27,8 @@ public class BaseMonsterBrain : MonoBehaviour {
 
     public Animator m_AnimComponent = null;
 
+    public HitReactionComp[] m_HitReactors = new HitReactionComp[0];
+
     public void Awake()
     {
         mObjectId = GameController.GetNextObjectId();
@@ -34,7 +37,16 @@ public class BaseMonsterBrain : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-        if (m_BrainActive)
+        if( !GameController.sGameStarted || GameController.sGameEnded)
+        {
+            return;
+        }
+
+        if (IsKnockedOut())
+        {
+            UpdateKnockedOut();
+        }
+        else if (m_BrainActive)
         {
             UpdateMonsterBrain();   
         }
@@ -46,6 +58,7 @@ public class BaseMonsterBrain : MonoBehaviour {
         UpdateMonsterMove();
         UpdateAttack();
     }
+
 
     public bool IsKnockedOut()
     {
@@ -61,6 +74,11 @@ public class BaseMonsterBrain : MonoBehaviour {
 
         m_MonsterHealthCurrent -= incDamage;
 
+        foreach( HitReactionComp hitComp in m_HitReactors)
+        {
+            hitComp.Shake();
+        }
+
         if(m_BrainActive && m_MonsterHealthCurrent <= m_KnockOutHealth )
         {
             OnKnockedOut(damageDir);
@@ -72,35 +90,43 @@ public class BaseMonsterBrain : MonoBehaviour {
         }
     }
 
+    public void Unregister()
+    {
+        GameController.sSpawnedMonsters.Remove(mObjectId);
+    }
+
+    // On Death should be called when we are turned to ash
     public void OnDeath( Vector3 damageDir )
     {
-        if(m_deathParticlePrefab)
+        Unregister();
+
+        if (m_LaserDeathPrefab)
         {
-            Instantiate(m_deathParticlePrefab, transform.position, Quaternion.LookRotation(damageDir));
+            Instantiate(m_LaserDeathPrefab, transform.position, Quaternion.identity);
         }
         Destroy(gameObject);
     }
 
     public void OnKnockedOut(Vector3 damageDir)
     {
+        Debug.Log("Please only happen once");
+        m_TimeKnockedOut = 0f;
         if(m_StunPrefab)
         {
             Instantiate(m_StunPrefab, transform.position, Quaternion.LookRotation(damageDir));
         }
         m_BrainActive = false;
 
-        if (m_AnimComponent)
-        {
-            m_AnimComponent.SetBool("IsStunned", true);
-        }
+        SetStunnedState(true);
     }
 
     public void OnRevive()
     {
         m_MonsterHealthCurrent = m_MonsterHealthMax;
         m_BrainActive = true;
+        SetStunnedState(false);
 
-        if(m_RevivePrefab)
+        if (m_RevivePrefab)
         {
             Instantiate(m_RevivePrefab, transform.position, Quaternion.identity);
         }
@@ -120,8 +146,9 @@ public class BaseMonsterBrain : MonoBehaviour {
             return;
         }
 
-        Vector3 dir = (closest.transform.position - transform.position);
-        Vector3 desiredPos = (closest.transform.position) + (m_MonsterAttackDistance * dir);
+        Vector3 dir = (transform.position - closest.transform.position );
+        dir = Vector3.Normalize(dir);
+        Vector3 desiredPos = (closest.transform.position) + ( dir);
         m_DesiredMovePosition = desiredPos;
     }
 
@@ -130,8 +157,26 @@ public class BaseMonsterBrain : MonoBehaviour {
         return m_DesiredMovePosition;
     }
 
+    public float m_MovePrecisionLeniency = 0.3f;
+    public float m_KnockedOutRecoveryRate = 5f;
+    float m_TimeKnockedOut = 0f;
+
+    public void UpdateKnockedOut()
+    {
+        m_TimeKnockedOut += Time.deltaTime;
+        if (m_TimeKnockedOut >= m_KnockedOutRecoveryRate)
+        {
+            OnRevive();
+        }
+    }
+
     public void UpdateMonsterMove()
     {
+        if(IsKnockedOut())
+        {
+            UpdateKnockedOut();
+            return;
+        }
         Vector3 moveTo = GetDesiredMovePoint();
         Vector3 moveDir = GetMoveDirection();
 
@@ -144,40 +189,71 @@ public class BaseMonsterBrain : MonoBehaviour {
             m_SpriteComp.transform.localScale = spriteScale;
         }
 
-        // If we haven't caught up, keep following
-        if ( m_MonsterAttackDistance < distanceTo)
-        {            
-            Vector3 newPosition = Vector3.MoveTowards(transform.position, moveTo, m_MoveSpeed * Time.deltaTime);
-            transform.position = newPosition;
-            if (m_AnimComponent)
-            {
-                m_AnimComponent.SetBool("IsAttacking", false);
-            }
-        }
-        else
+        Vector3 newPosition = Vector3.MoveTowards(transform.position, moveTo, m_MoveSpeed * Time.deltaTime);
+        transform.position = newPosition;
+        SetAttackingState(false);
+    }
+
+    public float m_MonsterAttackDamagePerSec = 5f;
+
+    public virtual void SetAttackingState( bool attacking )
+    {
+        if (m_AnimComponent)
         {
-            if (m_AnimComponent)
-            {
-                m_AnimComponent.SetBool("IsAttacking", true);
-            }
+            m_AnimComponent.SetBool("IsAttacking", attacking);
+        }
+    }
+
+    public virtual void SetStunnedState( bool stunned )
+    {
+        if( m_AnimComponent )
+        {
+            m_AnimComponent.SetBool("IsStunned", stunned);
         }
     }
 
     public void UpdateAttack()
     {
-
-    }
-
-    public void OnDeath()
-    {
-        GameController.sSpawnedMonsters.Remove(mObjectId);
-    }
-
-    public void OnTriggerEnter( Collider other )
-    {
-        if( other.GetComponent<PlayerObject>() )
+        float distanceTo = 0f;
+        GameObject attackObj = GameController.GetClosestAttackableObject(transform.position, ref distanceTo);
+        if(!attackObj)
         {
-            m_BrainActive = true;
+            SetAttackingState(false);
+            
+            return;
         }
+        else if(distanceTo <= m_MonsterAttackDistance)
+        {
+            SetAttackingState(true);
+
+            PlayerTeamObjectiveObject objective = attackObj.GetComponent<PlayerTeamObjectiveObject>();
+            PlayerChargeTracker playerCharge = attackObj.GetComponent<PlayerChargeTracker>();
+            if( objective )
+            {
+                objective.TakeDamage(Vector3.Normalize(objective.transform.position - transform.position), m_MonsterAttackDamagePerSec * Time.deltaTime);
+            }
+            else if(playerCharge)
+            {
+                playerCharge.TakeDamage(Vector3.Normalize(playerCharge.transform.position - transform.position), m_MonsterAttackDamagePerSec * Time.deltaTime);
+            }
+        }
+
+    }
+
+    public void OnThrownDeath(Vector3 damageDir)
+    {
+        Unregister();
+
+        if (m_ThrownDeathPrefab)
+        {
+            Instantiate(m_ThrownDeathPrefab, transform.position, Quaternion.LookRotation(damageDir));
+        }
+        Destroy(gameObject);
+    }
+
+    public void OnAssimilation()
+    {
+        Unregister();
+        Destroy(gameObject);
     }
 }

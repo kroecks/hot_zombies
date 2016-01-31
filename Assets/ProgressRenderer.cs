@@ -6,6 +6,7 @@ public class ProgressRenderer : MonoBehaviour {
 
     public Image m_ImageComp = null;
     public PlayerChargeTracker m_TrackedResource = null;
+    public HitReactionComp m_HitReactor = null;
 
 	// Use this for initialization
 	void Start () {
@@ -23,4 +24,12 @@ public class ProgressRenderer : MonoBehaviour {
         }
 	
 	}
+
+    public void OnTakeDamage()
+    {
+        if( m_HitReactor )
+        {
+            m_HitReactor.Shake();
+        }
+    }
 }

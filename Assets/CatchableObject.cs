@@ -12,4 +12,9 @@ public class CatchableObject : MonoBehaviour {
 	void Update () {
 	
 	}
+
+    public void OnObjectCaught()
+    {
+
+    }
 }
