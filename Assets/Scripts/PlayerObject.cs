@@ -19,11 +19,12 @@ public class PlayerObject : MonoBehaviour
 
     public void Awake()
     {
-        mObjectId = GameController.GetNextObjectId();
+       // mObjectId = GameController.GetNextObjectId();
     }
 
-    public void OnStart()
+    public void OnStart( int playerId )
     {
+        mObjectId = playerId;
         moveController = GetComponent<PlayerMoveController>();
         fireController = GetComponent<PlayerFireController>();
         chargeController = GetComponent<PlayerChargeTracker>();
@@ -47,6 +48,24 @@ public class PlayerObject : MonoBehaviour
 
             if (fireController)
                 fireController.UpdateFireController();
+        }
+        else
+        {
+            // We should verify that we're actually associated with someone
+            // we're a player, so just check the other player for secondary held
+            int otherPlayerId = (mPlayerId != 0) ? 0 : 1;
+            PlayerObject otherPlayer = GameController.sActivePlayers.ContainsKey(otherPlayerId) ? GameController.sActivePlayers[otherPlayerId] : null;
+            if( otherPlayer && otherPlayer.GetComponent<PlayerFireController>())
+            {
+                if( !otherPlayer.GetComponent<PlayerFireController>().IsSecondaryHeld() )
+                {
+                    SetMovementEnabled(true);
+                }
+            }
+            else
+            {
+                SetMovementEnabled(true);
+            }
         }
         
     }

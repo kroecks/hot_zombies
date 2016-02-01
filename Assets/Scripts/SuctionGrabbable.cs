@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class SuctionGrabbable : MonoBehaviour {
 
@@ -12,6 +13,29 @@ public class SuctionGrabbable : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+
+        if( m_grabbed )
+        {
+            bool isAnyHeld = false;
+            foreach( KeyValuePair<int, PlayerObject> playerPair in GameController.sActivePlayers)
+            {
+                if (playerPair.Value.GetComponent<PlayerFireController>().IsSecondaryHeld())
+                {
+                    isAnyHeld = true;
+                }
+            }
+
+            if(!isAnyHeld)
+            {
+                SetGrabbed(false);
+
+                BoxCollider boxCol = GetComponent<BoxCollider>();
+                if (boxCol)
+                {
+                    boxCol.enabled = true;
+                }
+            }
+        }
 	
 	}
 
@@ -37,6 +61,10 @@ public class SuctionGrabbable : MonoBehaviour {
 
     public void SetGrabbed( bool grabbed )
     {
+        if(m_grabbed == grabbed )
+        {
+            return;
+        }
         m_grabbed = grabbed;
         if( m_grabbed )
         {

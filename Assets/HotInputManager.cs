@@ -10,9 +10,16 @@ public class HotInputManager : MonoBehaviour {
     public int[] mRegisteredPlayers = new int[0];
     public Dictionary<int, Player> mRewiredPlayers = new Dictionary<int, Player>();
 
+    public bool m_bIsBlockingInput = true;
+
     void Awake()
     {
         sInstance = this;
+    }
+
+    public void OnAnimationEnd()
+    {
+        m_bIsBlockingInput = false;
     }
 
 	// Use this for initialization
@@ -32,6 +39,11 @@ public class HotInputManager : MonoBehaviour {
 
     Player GetPlayer( int playerId )
     {
+        if(m_bIsBlockingInput)
+        {
+            return null;
+        }
+
         if( !mRewiredPlayers.ContainsKey(playerId))
         {
             return null;

@@ -69,7 +69,9 @@ public class CreatureSpawner : MonoBehaviour {
         {
             return;
         }
-        int amountToSpawn = Mathf.CeilToInt(m_CreaturesPerLevel * m_CurrentLevel);
+        int amountToSpawn = Mathf.CeilToInt((m_CreaturesPerLevel * (float)m_CurrentLevel) + 0.1f);
+
+        Debug.Log("Spawning " + amountToSpawn.ToString() + " creatures!" + " we have " + m_CreaturesPerLevel.ToString()) ;
         while( amountToSpawn > 0 )
         {
             Vector2 randomPos = UnityEngine.Random.insideUnitCircle;

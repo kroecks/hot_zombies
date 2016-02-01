@@ -48,8 +48,6 @@ public class PlayerAimController : MonoBehaviour {
         }
         Vector3 inputAimVec = HotInputManager.sInstance.GetLookVector(mPlayerId);
 
-        Debug.Log("Player: " + gameObject.name + " is asking for " + mPlayerId.ToString() + " and got: " + inputAimVec.ToString());
-
         verticalAim = inputAimVec.y;
         horizontalAim = inputAimVec.x;
 

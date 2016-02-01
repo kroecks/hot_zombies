@@ -14,6 +14,7 @@ public class PlayerFireController : MonoBehaviour {
     public string m_fireButtonStr;
     public string m_secondaryFireButtonStr;
 
+    public bool IsSecondaryHeld() { return m_secondaryHeld; }
     bool m_secondaryHeld = false;
     bool m_primaryHeld = false;
 
@@ -78,16 +79,6 @@ public class PlayerFireController : MonoBehaviour {
         bool firstInitialHeld = m_primaryHeld;
         m_secondaryHeld = false;
         m_primaryHeld = false;
-
-        Player inputPlayer = ReInput.players.GetPlayer(mPlayerId);
-        if( inputPlayer != null )
-        {
-            float value = inputPlayer.GetAxis(m_fireButtonStr);
-            if(value != 0f)
-            {
-                m_primaryHeld = true;
-            }
-        }
 
         if ( HotInputManager.sInstance && HotInputManager.sInstance.GetPrimaryFire(mPlayerId) )
         {

@@ -21,9 +21,25 @@ public class PlayerChargeTracker : MonoBehaviour {
         {
             m_HealthBar.OnTakeDamage();
         }
+
+        if (m_TimeTilNextDamageSound <= 0f && m_TakeDamageClips.Length > 0)
+        {
+            m_TimeTilNextDamageSound = m_DamageSoundRate;
+            AudioClip playClip = m_TakeDamageClips[Random.Range(0, m_TakeDamageClips.Length)];
+            AudioSource aud = GetComponent<AudioSource>();
+            if (playClip && aud)
+            {
+                aud.PlayOneShot(playClip);
+            }
+        }
+
         OnChargeDecreased();
 
     }
+
+    public AudioClip[] m_TakeDamageClips = new AudioClip[0];
+    public float m_DamageSoundRate = 1f;
+    public float m_TimeTilNextDamageSound = 0f;
 
     void OnChargeDecreased()
     {

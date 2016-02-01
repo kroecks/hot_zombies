@@ -227,7 +227,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 153584}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.43026161, y: 12.5315866, z: 6.55651093e-07}
+  m_LocalPosition: {x: 2.10118866, y: 8.15039635, z: -2.27643681}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 437862}
@@ -604,7 +604,7 @@ Animator:
   m_GameObject: {fileID: 190506}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 3648abbfa7a8c6445b85894e854c8b91, type: 2}
+  m_Controller: {fileID: 9100000, guid: c69ad8fd0234b444e93b6f414560f7cf, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -654,7 +654,7 @@ MonoBehaviour:
   m_TractorBeamObj: {fileID: 145966}
   m_FireHitMask:
     serializedVersion: 2
-    m_Bits: 13056
+    m_Bits: 768
 --- !u!114 &11409278
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -710,12 +710,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7203e74e0e6e2974cba578f473f67466, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mPlayerNum: 1
+  mPlayerId: 1
   VerticalAimStr: VerticalAim2
   HorizontalAimStr: HorizontalAim2
   AimTransform: {fileID: 437862}
   CurrentAim: {x: 1, y: 0, z: 0}
-  mPlayerId: 1
 --- !u!114 &11442898
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -796,7 +795,7 @@ LineRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_Materials:
-  - {fileID: 2100000, guid: 5daf5a7b6f00a4d469f6fae0545d1846, type: 2}
+  - {fileID: 2100000, guid: cb82adb4abaaef74b96c15f0beb0c9c1, type: 2}
   m_SubsetIndices: 
   m_StaticBatchRoot: {fileID: 0}
   m_UseLightProbes: 1
@@ -966,7 +965,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: m_FireHitMask.m_Bits
-      value: 13056
+      value: 768
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: m_audioClip

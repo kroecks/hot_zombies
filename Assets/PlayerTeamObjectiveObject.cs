@@ -5,11 +5,21 @@ using System.Collections;
 // this class is to represent what the enemies want to attack
 public class PlayerTeamObjectiveObject : MonoBehaviour {
 
+    public SpriteRenderer[] m_SpriteHealthObjects = new SpriteRenderer[0];
+    public SpriteRenderer m_DeadRenderer = null;
+
     public AudioClip[] m_TakeDamageClips = new AudioClip[0];
 
     public float m_ObjectiveHealth = 100f;
 
     public int mObjectId = 0;
+
+    public float healthDivisor = 1f;
+
+    public void Start()
+    {
+        healthDivisor = (m_ObjectiveHealth / (float)m_SpriteHealthObjects.Length);
+    }
 
     public void Awake()
     {
@@ -39,6 +49,20 @@ public class PlayerTeamObjectiveObject : MonoBehaviour {
         }
         m_ObjectiveHealth -= damageAmt;
 
+        for( int i = 0; i < m_SpriteHealthObjects.Length; i++)
+        {
+            float amountDone = i * healthDivisor;
+
+            if( amountDone > m_ObjectiveHealth )
+            {
+                m_SpriteHealthObjects[i].gameObject.SetActive(false);
+            }
+            else
+            {
+                m_SpriteHealthObjects[i].gameObject.SetActive(true);
+            }            
+        }
+
         if( m_TimeTilNextDamageSound <= 0f && m_TakeDamageClips.Length > 0)
         {
             m_TimeTilNextDamageSound = m_DamageSoundRate;
@@ -58,7 +82,10 @@ public class PlayerTeamObjectiveObject : MonoBehaviour {
 
     public void OnDestroyed()
     {
-
+        if( m_DeadRenderer != null)
+        {
+            m_DeadRenderer.gameObject.SetActive(true);
+        }
     }
 
 }

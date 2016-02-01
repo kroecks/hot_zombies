@@ -639,6 +639,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_beamRenderer: {fileID: 12053870}
   m_fireSoundLoop: {fileID: 8300000, guid: 5611589c361da354483a48703eae92f6, type: 3}
+  mPlayerId: 0
   m_fireButtonStr: FirePrimary1
   m_secondaryFireButtonStr: FireSecondary1
   m_secondarySuckUpRange: 5
@@ -653,7 +654,7 @@ MonoBehaviour:
   m_TractorBeamObj: {fileID: 145966}
   m_FireHitMask:
     serializedVersion: 2
-    m_Bits: 13056
+    m_Bits: 768
 --- !u!114 &11409278
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -709,6 +710,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7203e74e0e6e2974cba578f473f67466, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mPlayerId: 0
   VerticalAimStr: VerticalAim1
   HorizontalAimStr: HorizontalAim1
   AimTransform: {fileID: 437862}
@@ -724,6 +726,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fd0618c3b6106e408d1a0ddf6540403, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mPlayerId: 0
   m_defaultDirection: 0
   m_currentDirection: 0
   m_movementAnim: {fileID: 9576592}
@@ -780,6 +783,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mObjectId: 0
+  mPlayerId: 0
   m_MovementEnabled: 1
 --- !u!120 &12053870
 LineRenderer:
@@ -961,7 +965,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: m_FireHitMask.m_Bits
-      value: 13056
+      value: 768
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: m_audioClip

@@ -7,16 +7,29 @@ using System.Text;
 public class GameController : MonoBehaviour
 {
     public static GameController sInstance = null;
-    public static int sLastObjectId = 0;
+    public static int sLastObjectId = 32; // arbitrary inflation for static keys
     public static int GetNextObjectId()
     {
         return ++sLastObjectId;
     }
 
+    public static bool sGameStarted = false;
+    public static bool sGameEnded = false;
+
     public static Dictionary<int, PlayerObject> sActivePlayers = new Dictionary<int, PlayerObject>();
     public static Dictionary<int, PlayerTeamObjectiveObject> sActiveObjects = new Dictionary<int, PlayerTeamObjectiveObject>();
     public static Dictionary<int, BaseMonsterBrain> sSpawnedMonsters = new Dictionary<int, BaseMonsterBrain>();
     public static Dictionary<int, ReviveSpawns> sReviveSpawns = new Dictionary<int, ReviveSpawns>();
+
+    public void ClearStatics()
+    {
+        sActivePlayers.Clear();
+        sActiveObjects.Clear();
+        sSpawnedMonsters.Clear();
+        sReviveSpawns.Clear();
+        sGameStarted = false;
+        sGameEnded = false;
+    }
 
     public static ReviveSpawns GetClosestReviveSpawn(Vector3 fromPoint, ref float outDistance)
     {
@@ -174,6 +187,20 @@ public class GameController : MonoBehaviour
 
     public void Update()
     {
+        if( sGameEnded)
+        {
+            if(HotInputManager.sInstance)
+            {
+                if(HotInputManager.sInstance.GetStart(0) || HotInputManager.sInstance.GetStart(1))
+                {
+                    ClearStatics();
+                    Application.LoadLevel(Application.loadedLevelName);
+                }
+            }
+
+            return;
+        }
+
         bool bStartGame = false;
         if( !playerOneSpawned && HotInputManager.sInstance && HotInputManager.sInstance.GetStart(0))
         {
@@ -194,9 +221,6 @@ public class GameController : MonoBehaviour
             StartGame();
         }
     }
-
-    public static bool sGameStarted = false;
-    public static bool sGameEnded = false;
 
     public void StartGame()
     {
@@ -260,7 +284,7 @@ public class GameController : MonoBehaviour
             return;
         }
 
-        playerObj.OnStart();
+        playerObj.OnStart(1);
 
         PlayerChargeTracker chargeTrack = playerObj.GetComponent<PlayerChargeTracker>();
         if (m_playerTwoBar && chargeTrack)
@@ -294,7 +318,7 @@ public class GameController : MonoBehaviour
             return;
         }
 
-        playerObj.OnStart();
+        playerObj.OnStart(0);
 
         PlayerChargeTracker chargeTrack = playerObj.GetComponent<PlayerChargeTracker>();
         if ( m_playerOneBar && chargeTrack)
